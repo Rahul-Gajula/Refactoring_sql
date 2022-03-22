@@ -1,30 +1,23 @@
 with
 
 -- Import CTEs
-base_customers as (
+customers as (
 
-    select * from {{ source('jaffle_shop', 'customers') }}
+    select * from {{ref('stg_jaffle_shop__customers')}}
 
 ),
 
-base_orders as (
+orders as (
 
-    select * from {{ source('jaffle_shop', 'orders') }}
+    select * from {{ref('stg_jaffle_shop__orders')}}
 
 ),
 
 payments as (
 
-    select * from {{ source('stripe', 'payment') }}
+    select * from {{ref('stg_stripe__payments')}}
 
 ),
-
--- Logical CTEs (Staging)
-
-
-
-
-
 
 --Marts 
 customer_order_history as (
@@ -75,17 +68,17 @@ customer_order_history as (
 
         array_agg(distinct orders.order_id) as order_ids
 
-    from a
+    from orders
 
     join customers
-    on orders.customer_id = customers.customers_id
+    on orders.customer_id = customers.customer_id
 
-    left outer join payments as 
+    left outer join payments  
     on orders.order_id = payments.order_id
 
     where orders.order_status not in ('pending') and payments.payment_status != 'fail'
 
-    group by customers.customers_id, customers.full_name, customers.surname, customers.givenname
+    group by customers.customer_id, customers.full_name, customers.surname, customers.givenname
 
 ),
 
@@ -108,7 +101,7 @@ final as (
     from orders
 
     join customers
-    on orders.customer_id = customers.customers_id
+    on orders.customer_id = customers.customer_id
 
     join customer_order_history
     on orders.customer_id = customer_order_history.customer_id
